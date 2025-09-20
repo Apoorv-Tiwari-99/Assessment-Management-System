@@ -2,10 +2,9 @@ const puppeteer = require("puppeteer");
 
 const generatePDFBuffer = async (htmlContent) => {
   const browser = await puppeteer.launch({
-    headless: "new", // ensures Chromium headless mode (v19+)
+    headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    executablePath:
-      process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
+    executablePath: puppeteer.executablePath(), // always use bundled Chromium
   });
 
   const page = await browser.newPage();
