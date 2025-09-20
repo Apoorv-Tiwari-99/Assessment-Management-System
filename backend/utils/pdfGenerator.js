@@ -1,12 +1,13 @@
 // backend/utils/pdfGenerator.js
-const puppeteer = require('puppeteer');
+const puppeteer = require("puppeteer");
 
 // Generate PDF as buffer instead of saving to file
 const generatePDFBuffer = async (htmlContent) => {
-  // Launch with required flags for Render
   const browser = await puppeteer.launch({
     headless: "new", // ensures Chromium headless mode (v19+)
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    executablePath:
+      process.env.PUPPETEER_EXECUTABLE_PATH || (await puppeteer.executablePath()),
   });
 
   const page = await browser.newPage();
