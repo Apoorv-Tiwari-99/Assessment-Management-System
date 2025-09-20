@@ -3,25 +3,29 @@ const puppeteer = require('puppeteer');
 
 // Generate PDF as buffer instead of saving to file
 const generatePDFBuffer = async (htmlContent) => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  
-  await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-  
-  // Generate PDF buffer instead of saving to file
-  const pdfBuffer = await page.pdf({ 
-    format: 'A4',
-    printBackground: true
+  // Launch with required flags for Render
+  const browser = await puppeteer.launch({
+    headless: "new", // ensures Chromium headless mode (v19+)
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
-  
+
+  const page = await browser.newPage();
+  await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+  // Generate PDF buffer
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+    printBackground: true,
+  });
+
   await browser.close();
   return pdfBuffer;
 };
 
-// Keep the HTML generation function (same as before)
+// HTML report generator
 const generateHTMLReport = (assessmentData, config) => {
-  const { getValueByPath, classifyValue } = require('./dataUtils');
-  
+  const { getValueByPath, classifyValue } = require("./dataUtils");
+
   let html = `
     <!DOCTYPE html>
     <html>
@@ -46,46 +50,49 @@ const generateHTMLReport = (assessmentData, config) => {
         <p>Assessment ID: ${assessmentData.assessment_id}</p>
       </div>
   `;
-  
+
   // Generate sections based on config
-  config.sections.forEach(section => {
+  config.sections.forEach((section) => {
     html += `<div class="section"><div class="section-title">${section.name}</div>`;
-    
-    section.fields.forEach(field => {
+
+    section.fields.forEach((field) => {
       let value;
-      
+
       if (Array.isArray(field.path)) {
         const values = getValueByPath(assessmentData, field.path);
-        value = field.format ? field.format(...values) : values.join(', ');
+        value = field.format ? field.format(...values) : values.join(", ");
       } else {
         value = getValueByPath(assessmentData, field.path);
       }
-      
+
       if (value !== undefined) {
         html += `<div class="field">`;
         html += `<span class="field-label">${field.label}:</span>`;
-        html += `<span class="field-value">${value} ${field.unit || ''}</span>`;
-        
+        html += `<span class="field-value">${value} ${field.unit || ""}</span>`;
+
         // Add classification if available
         if (field.classification) {
-          const classification = classifyValue(parseFloat(value), field.classification);
+          const classification = classifyValue(
+            parseFloat(value),
+            field.classification
+          );
           if (classification) {
             html += `<span class="classification">(${classification})</span>`;
           }
         }
-        
+
         html += `</div>`;
       }
     });
-    
+
     html += `</div>`;
   });
-  
+
   html += `</body></html>`;
   return html;
 };
 
 module.exports = {
   generatePDFBuffer,
-  generateHTMLReport
+  generateHTMLReport,
 };
