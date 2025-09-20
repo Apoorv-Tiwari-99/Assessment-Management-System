@@ -1,61 +1,27 @@
+// backend/utils/pdfGenerator.js
 const puppeteer = require('puppeteer');
 
+// Generate PDF as buffer instead of saving to file
 const generatePDFBuffer = async (htmlContent) => {
-  let browser;
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
   
-  try {
-    const launchOptions = {
-      headless: "new",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--single-process",
-        "--no-zygote"
-      ]
-    };
-
-    // For Render environment, use the system Chrome if available
-    if (process.env.RENDER) {
-      launchOptions.executablePath = process.env.CHROME_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
-    }
-
-    browser = await puppeteer.launch(launchOptions);
-    
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { 
-      waitUntil: "networkidle0",
-      timeout: 30000
-    });
-
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
-      }
-    });
-
-    return pdfBuffer;
-  } catch (error) {
-    console.error('PDF generation error:', error);
-    throw error;
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
-  }
+  await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+  
+  // Generate PDF buffer instead of saving to file
+  const pdfBuffer = await page.pdf({ 
+    format: 'A4',
+    printBackground: true
+  });
+  
+  await browser.close();
+  return pdfBuffer;
 };
 
-
-// HTML report generator
+// Keep the HTML generation function (same as before)
 const generateHTMLReport = (assessmentData, config) => {
-  const { getValueByPath, classifyValue } = require("./dataUtils");
-
+  const { getValueByPath, classifyValue } = require('./dataUtils');
+  
   let html = `
     <!DOCTYPE html>
     <html>
@@ -80,49 +46,46 @@ const generateHTMLReport = (assessmentData, config) => {
         <p>Assessment ID: ${assessmentData.assessment_id}</p>
       </div>
   `;
-
+  
   // Generate sections based on config
-  config.sections.forEach((section) => {
+  config.sections.forEach(section => {
     html += `<div class="section"><div class="section-title">${section.name}</div>`;
-
-    section.fields.forEach((field) => {
+    
+    section.fields.forEach(field => {
       let value;
-
+      
       if (Array.isArray(field.path)) {
         const values = getValueByPath(assessmentData, field.path);
-        value = field.format ? field.format(...values) : values.join(", ");
+        value = field.format ? field.format(...values) : values.join(', ');
       } else {
         value = getValueByPath(assessmentData, field.path);
       }
-
+      
       if (value !== undefined) {
         html += `<div class="field">`;
         html += `<span class="field-label">${field.label}:</span>`;
-        html += `<span class="field-value">${value} ${field.unit || ""}</span>`;
-
+        html += `<span class="field-value">${value} ${field.unit || ''}</span>`;
+        
         // Add classification if available
         if (field.classification) {
-          const classification = classifyValue(
-            parseFloat(value),
-            field.classification
-          );
+          const classification = classifyValue(parseFloat(value), field.classification);
           if (classification) {
             html += `<span class="classification">(${classification})</span>`;
           }
         }
-
+        
         html += `</div>`;
       }
     });
-
+    
     html += `</div>`;
   });
-
+  
   html += `</body></html>`;
   return html;
 };
 
 module.exports = {
   generatePDFBuffer,
-  generateHTMLReport,
-};
+  generateHTMLReport
+}; 
