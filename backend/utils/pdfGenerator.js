@@ -1,19 +1,16 @@
-// backend/utils/pdfGenerator.js
 const puppeteer = require("puppeteer");
 
-// Generate PDF as buffer instead of saving to file
 const generatePDFBuffer = async (htmlContent) => {
   const browser = await puppeteer.launch({
     headless: "new", // ensures Chromium headless mode (v19+)
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     executablePath:
-      process.env.PUPPETEER_EXECUTABLE_PATH || (await puppeteer.executablePath()),
+      process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
   });
 
   const page = await browser.newPage();
   await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
-  // Generate PDF buffer
   const pdfBuffer = await page.pdf({
     format: "A4",
     printBackground: true,
@@ -22,6 +19,7 @@ const generatePDFBuffer = async (htmlContent) => {
   await browser.close();
   return pdfBuffer;
 };
+
 
 // HTML report generator
 const generateHTMLReport = (assessmentData, config) => {
