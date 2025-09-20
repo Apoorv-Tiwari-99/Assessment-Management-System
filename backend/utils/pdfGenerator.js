@@ -6,7 +6,7 @@ const generatePDFBuffer = async (htmlContent) => {
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     executablePath: puppeteer.executablePath(), // always use bundled Chromium
   });
-
+  console.log("Chromium path:", puppeteer.executablePath());
   const page = await browser.newPage();
   await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
