@@ -1,26 +1,32 @@
-const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer');
 
 const generatePDFBuffer = async (htmlContent) => {
-  // Configure Chromium for production vs development
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  const launchOptions = {
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: isProduction 
-      ? await chromium.executablePath() 
-      : process.env.CHROME_EXECUTABLE_PATH || puppeteer.executablePath(),
-    headless: chromium.headless,
-  };
-
-  const browser = await puppeteer.launch(launchOptions);
+  let browser;
   
   try {
+    const launchOptions = {
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--single-process",
+        "--no-zygote"
+      ]
+    };
+
+    // For Render environment, use the system Chrome if available
+    if (process.env.RENDER) {
+      launchOptions.executablePath = process.env.CHROME_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
+    }
+
+    browser = await puppeteer.launch(launchOptions);
+    
     const page = await browser.newPage();
     await page.setContent(htmlContent, { 
       waitUntil: "networkidle0",
-      timeout: 30000 // Increase timeout for reliability
+      timeout: 30000
     });
 
     const pdfBuffer = await page.pdf({
@@ -35,8 +41,13 @@ const generatePDFBuffer = async (htmlContent) => {
     });
 
     return pdfBuffer;
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    throw error;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 };
 

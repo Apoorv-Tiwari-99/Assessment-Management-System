@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "postinstall": "node node_modules/@sparticuz/chromium/bin/install.js"
+    "postinstall": "echo \"Skipping Chromium download for Render\""
   },
   "keywords": [],
   "author": "",
