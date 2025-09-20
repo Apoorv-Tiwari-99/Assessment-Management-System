@@ -23,7 +23,7 @@ const ReportResult = () => {
     setDownloading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/download-report?session_id=${sessionData.session_id}`, {
+      const response = await fetch(`https://assessment-management-system-backend.onrender.com/api/download-report?session_id=${sessionData.session_id}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
